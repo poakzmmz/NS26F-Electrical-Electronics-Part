@@ -1,0 +1,54 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+*.bak
+*~
+
+# KiCad generated files
+*-backups/
+_autosave-*
+*.lck
+*.kicad_prl
+*.kicad_pro-bak
+*.kicad_sch-bak
+*.kicad_pcb-bak
+
+# Altium generated files
+History/
+Project\ Logs*/
+Project\ Outputs*/
+*.SchDocPreview
+*.PcbDocPreview
+
+# Firmware build output
+.pio/
+.vscode/
+build/
+dist/
+Debug/
+Release/
+__pycache__/
+*.pyc
+*.elf
+*.map
+*.o
+
+# Local histories preserved outside the integrated repository
+archive/local-git-history/
+archive/kicad-autosave/
+archive/local-metadata/
+
+# Imported nested repositories and editor history
+**/.git/
+**/.history/
+
+# Runtime logs
+telemetry/viewer/lora-monitor/logs/
+
+# Secrets
+.env
+.env.*
+!.env.example
+secrets.*

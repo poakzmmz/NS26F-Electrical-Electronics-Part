@@ -1,0 +1,61 @@
+NS26F Formula Student Datalogger Project Spec
+
+하드웨어 기본 정보
+
+MCU: STM32F405RGT6
+
+클럭: 8MHz External Crystal (Passive, 3225-4P)
+
+전원: 3.3V (아날로그 라인 Ferrite Bead 분리)
+
+특이사항: MCP6002 Op-Amp 패키지 SOIC-8 (C7377) 사용
+
+핀 할당 (Pinout)
+
+SWD: PA13 (DIO), PA14 (CLK), NRST (7번핀 연동)
+
+CAN1: PB8 (RX), PB9 (TX) - 500kbps 설정
+
+UART1: PA9 (TX), PA10 (RX)
+
+UART2: PA2 (TX), PA3 (RX)
+
+UART4: PC10 (TX), PC11 (RX)
+
+SDIO: PC8, PC9, PC10, PC11, PC12, PD2 (4-bit Mode)
+
+USB: PA11 (DM), PA12 (DP)
+
+USB_DET: PB12 (VBUS 감지용)
+
+ADC_IN: PC0, PC1, PC2, PC3, PA0, PA1 (총 6채널)
+
+TIM_IC: PA8, PA15, PB3, PB10 (휠스피드 4채널, Input Capture)
+
+LED: PB0 (LED1), PB1 (LED2)
+
+VCAP: 31번, 47번 핀에 2.2uF 커패시터 필수 실장
+
+주요 기능 요구사항
+
+데이터 동기화: 모든 데이터(CAN, ADC, TIM, UART)에 동일 타임스탬프 부여
+
+로깅 샘플링: ADC 6채널 및 TIM 4채널 데이터를 100Hz 주기로 저장
+
+SD카드 쓰기: SDIO DMA 및 더블 버퍼링 적용 (쓰기 중 데이터 누락 방지)
+
+CAN 스트림: 수신 인터럽트 및 링 버퍼 사용 (500kbps 대응)
+
+USB 모드: PB12 전원 감지 시 SD카드를 PC 이동식 디스크로 인식 (MSC)
+
+파일 시스템: FATFS (FAT32) 기반 csv 또는 bin 파일 로깅
+
+펌웨어 로직 우선순위
+
+우선순위 1: CAN 메시지 수신 및 인터럽트 처리
+
+우선순위 2: 100Hz 타이머 기반 ADC/TIM 데이터 패킹
+
+우선순위 3: SD카드 쓰기 (백그라운드 DMA 전송)
+
+우선순위 4: USB 연결 대기 및 상태 LED 제어

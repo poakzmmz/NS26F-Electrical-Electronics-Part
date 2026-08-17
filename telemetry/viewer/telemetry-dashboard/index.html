@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team NSSUR Telemetry</title>
+  
+  <!-- Google Font (Inter & JetBrains Mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- PapaParse for high-performance CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css?v=20260815-14">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-wrapper">
+          <img src="team_logo.png" alt="Team NSSUR Logo">
+        </div>
+        <div class="brand-title-area">
+          <span class="brand-team">Team NSSUR</span>
+          <span class="brand-sub">Telemetry</span>
+        </div>
+        <!-- 탭 버튼 영역 -->
+        <nav class="tab-navigation">
+          <button id="tab-general" class="view-tab active">1: 종합 주행 분석</button>
+          <button id="tab-diagnostics" class="view-tab">2: 입력 및 서스펜션 분석</button>
+          <button id="tab-gps" class="view-tab">3: GPS + IMU 주행 분석</button>
+          <button id="tab-temperature" class="view-tab">4: 냉각 및 온도 분석</button>
+          <button id="tab-realtime" class="view-tab">5: 실시간 텔레메트리</button>
+          <button id="tab-help" class="view-tab">6: 도움말</button>
+        </nav>
+      </div>
+      
+      <div class="header-right">
+        <span id="loaded-file-badge" style="display: none; font-family: monospace; font-size: 12px; font-weight: 700; color: #f97316; background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.2); padding: 5px 10px; border-radius: 4px; margin-right: 8px;"></span>
+        <button id="btn-theme-toggle" class="btn btn-theme">🌓 테마 전환</button>
+        <!-- 간단 파일 업로드 버튼 -->
+        <label for="csv-upload-input" class="btn btn-archive" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+          <svg class="icon-archive" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span>CSV 열기</span>
+        </label>
+        <input type="file" id="csv-upload-input" accept=".csv,.CSV" style="display:none;">
+        
+        <div id="file-status" class="status-badge inactive">
+          <span class="status-pulse"></span>
+          <span id="status-text">로그 대기 중</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <div class="workspace">
+      
+      <!-- [페이지 1] MoTeC 스타일 2단 차트 레이아웃 (기본 활성화, 100% 꽉 찬 화면) -->
+      <section id="page-general" class="analysis-split-view page-view active">
+        
+        <!-- Left Column: Vehicle State (Speed, RPM, Gear) -->
+        <div class="view-column">
+          <!-- 1페이지 좌측 세로 관통 커서선 -->
+          <div id="cursor-line-page1-left" class="motec-cursor-line"></div>
+          <!-- Chart 1: Wheel Speed -->
+          <div class="motec-chart-card">
+            <div class="chart-label-bar">
+              <span class="signal-title color-orange">FL Wheel Speed [EMU VSS]</span>
+              <span class="signal-val val-sep" id="cursor-speed">--.-</span>
+              <span class="signal-title color-blue">RL Wheel Speed [km/h]</span>
+              <span class="signal-val val-sep" id="cursor-speed-rl">--.-</span>
+              <span class="signal-title color-green">RR Wheel Speed [Wheel 3]</span>
+              <span class="signal-val" id="cursor-speed-rr">--.-</span>
+            </div>
+            <div class="canvas-holder">
+              <canvas id="chart-ground-speed"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Engine RPM -->
+          <div class="motec-chart-card">
+            <div class="chart-label-bar">
+              <span class="signal-title color-red">Engine RPM [rpm]</span>
+              <span class="signal-val" id="cursor-rpm">----</span>
+            </div>
+            <div class="canvas-holder">
+              <canvas id="chart-engine-rpm"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 3: Gear -->
+          <div class="motec-chart-card">
+            <div class="chart-label-bar">
+              <span class="signal-title color-blue">Gear</span>
+              <span class="signal-val" id="cursor-gear">-</span>
+            </div>
+            <div class="canvas-holder">
+              <canvas id="chart-vehicle-gear"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Driver Input (Steering, Throttle vs Brake) -->
+        <div class="view-column">
+          <!-- 1페이지 우측 세로 관통 커서선 -->
+          <div id="cursor-line-page1-right" class="motec-cursor-line"></div>
+          <!-- Chart 4: Steering Angle -->
+          <div class="motec-chart-card double-height">
+            <div class="chart-label-bar">
+              <div class="steering-series-controls">
+                <span class="signal-title color-magenta">Steering Angle [°]</span>
+                <button type="button" class="steering-series-toggle yaw active" data-dataset="1" aria-pressed="true"><i></i>Yaw [°/s]</button>
+                <button type="button" class="steering-series-toggle lateral active" data-dataset="2" aria-pressed="true"><i></i>횡G [g]</button>
+              </div>
+              <span class="signal-val" id="cursor-steering">--.-</span>
+            </div>
+            <div class="canvas-holder">
+              <canvas id="chart-steering-angle"></canvas>
+              <!-- 캔버스 우측 상단 여백에 절대 위치로 큼직하게 띄운 스티어링 휠 오버레이 위젯 -->
+              <div class="steering-wheel-overlay">
+                <svg id="steering-wheel-graphic" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" stroke="var(--text-primary)" stroke-width="8" fill="none" opacity="0.8" />
+                  <line x1="50" y1="50" x2="50" y2="90" stroke="var(--text-primary)" stroke-width="8" stroke-linecap="round" />
+                  <line x1="50" y1="50" x2="10" y2="50" stroke="var(--text-primary)" stroke-width="8" stroke-linecap="round" />
+                  <line x1="50" y1="50" x2="90" y2="50" stroke="var(--text-primary)" stroke-width="8" stroke-linecap="round" />
+                  <circle cx="50" cy="50" r="10" fill="var(--accent-magenta)" />
+                  <rect x="47" y="6" width="6" height="8" fill="var(--accent-orange)" rx="1" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 5: Throttle & Brake Overlap -->
+          <div class="motec-chart-card double-height">
+            <div class="chart-label-bar">
+              <span class="signal-title color-green">Throttle Pos [%]</span>
+              <span class="signal-val val-sep" id="cursor-throttle">---.-</span>
+              <span class="signal-title color-red">Brake Pos [%]</span>
+              <span class="signal-val" id="cursor-brake">---.-</span>
+            </div>
+            <div class="canvas-holder">
+              <canvas id="chart-throttle-brake"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- [페이지 2] MoTeC 2: Suspension & Driver Inputs (100% 꽉 찬 화면) -->
+      <section id="page-diagnostics" class="diagnostic-panel page-view">
+        <div class="panel-header">
+          <div class="panel-title-area">
+            <span class="col-indicator yellow"></span>
+            <h3>입력 및 서스펜션 분석</h3>
+          </div>
+          <div class="header-right-group">
+            <!-- 가로 한줄 요약 통계 바 -->
+            <div class="diag-stats-bar">
+              <span class="stat-item">Max RPM: <strong id="stat-max-rpm">0</strong></span>
+              <span class="stat-item">Max Speed: <strong id="stat-max-speed">0.0 km/h</strong></span>
+              <span class="stat-item">Min Batt: <strong id="stat-min-batt">0.00 V</strong></span>
+              <span class="stat-item">Duration: <strong id="stat-duration">0.0s</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="diag-workspace">
+          
+          <!-- 상단 영역: 드라이버 제어 입력 3종 묶음 (Throttle, Brake, Steering - 동일 프레임 세로 분리 스택형) -->
+          <div class="diag-top-section">
+            <div class="motec-chart-card diag-stacked-card">
+              <div class="chart-label-bar diag-label-bar">
+                <div class="diag-label-cell">
+                  <span class="signal-title color-green">Throttle [%]</span>
+                  <span class="signal-val" id="diag-cursor-throttle">--.-</span>
+                </div>
+                <div class="diag-label-cell">
+                  <span class="signal-title color-red">Brake [%]</span>
+                  <span class="signal-val" id="diag-cursor-brake">--.-</span>
+                </div>
+                <div class="diag-label-cell">
+                  <span class="signal-title color-magenta">Steering Angle [°]</span>
+                  <span class="signal-val" id="diag-cursor-steering">--.-</span>
+                  <!-- 2페이지 핸들 그래픽 (1페이지와 동일 디자인) -->
+                  <div class="diag-steering-wheel-wrapper">
+                    <svg id="diag-steering-wheel-graphic" class="diag-steering-wheel-svg" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="40" stroke="var(--text-primary)" stroke-width="8" fill="none" opacity="0.8" />
+                      <line x1="50" y1="50" x2="50" y2="90" stroke="var(--text-primary)" stroke-width="8" stroke-linecap="round" />
+                      <line x1="50" y1="50" x2="10" y2="50" stroke="var(--text-primary)" stroke-width="8" stroke-linecap="round" />
+                      <line x1="50" y1="50" x2="90" y2="50" stroke="var(--text-primary)" stroke-width="8" stroke-linecap="round" />
+                      <circle cx="50" cy="50" r="10" fill="var(--accent-magenta)" />
+                      <rect x="47" y="6" width="6" height="8" fill="var(--accent-orange)" rx="1" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="stacked-canvas-container">
+                <!-- 2페이지 상단 세로 관통 커서선 -->
+                <div id="cursor-line-page2-top" class="motec-cursor-line" style="top: 0; bottom: 0;"></div>
+                <!-- 상단 서브 시트: 스로틀 및 브레이크 -->
+                <div class="canvas-holder-stacked top-pane">
+                  <canvas id="diag-chart-throttle-brake"></canvas>
+                </div>
+                <!-- 하단 서브 시트: 조향각 -->
+                <div class="canvas-holder-stacked bottom-pane">
+                  <canvas id="diag-chart-steering"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 하단 영역: 4바퀴 서스펜션 트래블 분할 차트 (FL, FR, RL, RR 레이아웃) -->
+          <div class="diag-bottom-section">
+            <!-- 좌측 열: FL(상) & RL(하) -->
+            <div class="diag-column">
+              <!-- 2페이지 하단 좌측 세로 관통 커서선 -->
+              <div id="cursor-line-page2-bot-left" class="motec-cursor-line" style="top: 0; bottom: 0;"></div>
+              <div class="motec-chart-card sus-card">
+                <div class="chart-label-bar">
+                  <span class="signal-title color-orange">Suspension FL [mm · ADC6 / PC5]</span>
+                  <button type="button" class="suspension-cal-btn suspension-cal-trigger" data-wheel="fl" aria-label="FL 서스펜션 오프셋 보정">⚙</button>
+                  <span class="signal-val" id="cursor-sus-fl">----</span>
+                </div>
+                <div class="canvas-holder-sub">
+                  <canvas id="chart-sus-fl"></canvas>
+                </div>
+              </div>
+              
+              <div class="motec-chart-card sus-card">
+                <div class="chart-label-bar">
+                  <span class="signal-title color-blue">Suspension RL [mm · EMU ADC4]</span>
+                  <button type="button" class="suspension-cal-btn suspension-cal-trigger" data-wheel="rl" aria-label="RL 서스펜션 오프셋 보정">⚙</button>
+                  <span class="signal-val" id="cursor-sus-rl">----</span>
+                </div>
+                <div class="canvas-holder-sub">
+                  <canvas id="chart-sus-rl"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- 우측 열: FR(상) & RR(하) -->
+            <div class="diag-column">
+              <!-- 2페이지 하단 우측 세로 관통 커서선 -->
+              <div id="cursor-line-page2-bot-right" class="motec-cursor-line" style="top: 0; bottom: 0;"></div>
+              <div class="motec-chart-card sus-card">
+                <div class="chart-label-bar">
+                  <span class="signal-title color-red">Suspension FR [mm · ADC4 / PC3]</span>
+                  <button type="button" class="suspension-cal-btn suspension-cal-trigger" data-wheel="fr" aria-label="FR 서스펜션 오프셋 보정">⚙</button>
+                  <span class="signal-val" id="cursor-sus-fr">----</span>
+                </div>
+                <div class="canvas-holder-sub">
+                  <canvas id="chart-sus-fr"></canvas>
+                </div>
+              </div>
+              
+              <div class="motec-chart-card sus-card">
+                <div class="chart-label-bar">
+                  <span class="signal-title color-green">Suspension RR [mm · EMU ADC5]</span>
+                  <button type="button" class="suspension-cal-btn suspension-cal-trigger" data-wheel="rr" aria-label="RR 서스펜션 오프셋 보정">⚙</button>
+                  <span class="signal-val" id="cursor-sus-rr">----</span>
+                </div>
+                <div class="canvas-holder-sub">
+                  <canvas id="chart-sus-rr"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- [페이지 3] GPS 주행 경로 지도 (Leaflet.js 기반) -->
+      <section id="page-gps" class="analysis-split-view page-view">
+        <!-- Left Side: GPS map + synchronized IMU timelines -->
+        <div class="gps-main-column">
+          <div class="motec-chart-card gps-map-card">
+            <div class="chart-label-bar">
+              <div class="gps-map-title-group">
+                <span class="signal-title color-orange">GPS Track Map</span>
+                <button id="gps-map-fullscreen" class="gps-map-fullscreen-button" type="button" aria-label="GPS 지도 전체화면">⛶ 전체화면</button>
+              </div>
+              <span class="signal-val" id="cursor-gps-coords">--.------, ---.------</span>
+            </div>
+            <div class="gps-lap-toolbar">
+              <button id="gps-lap-set-line" type="button">🏁 피니시 라인 설정</button>
+              <button id="gps-checkpoint-add" type="button" disabled>＋ 체크포인트</button>
+              <button id="gps-checkpoint-clear" type="button" disabled>🔒 고정선 초기화</button>
+              <button id="gps-sector-toggle" type="button" disabled>구간 비교</button>
+              <label>최소 랩
+                <input id="gps-lap-min-time" type="number" min="5" max="600" step="1" value="20">
+                <span>초</span>
+              </label>
+              <span id="gps-lap-toolbar-status">지도에서 라인 양 끝을 차례로 선택하십시오.</span>
+              <div class="gps-fullscreen-playback">
+                <label class="gps-gopro-open disabled" for="gps-gopro-file" aria-disabled="true">🎥 GoPro MP4</label>
+                <input id="gps-gopro-file" type="file" accept="video/mp4,.mp4" hidden disabled>
+                <button id="gps-youtube-open" class="gps-youtube-open" type="button" aria-disabled="true">▶ YouTube</button>
+                <button id="gps-fullscreen-play-toggle" type="button">▶ 재생</button>
+                <select id="gps-fullscreen-play-rate" aria-label="전체화면 재생 속도">
+                  <option value="0.5">0.5×</option>
+                  <option value="1" selected>1×</option>
+                  <option value="2">2×</option>
+                  <option value="4">4×</option>
+                </select>
+                <input id="gps-fullscreen-timeline" type="range" min="0" max="100" step="0.04" value="0" aria-label="전체화면 재생 시점">
+                <span id="gps-fullscreen-play-time">0.00 s</span>
+              </div>
+            </div>
+            <div class="gps-map-stage">
+              <div id="gps-map"></div>
+              <div id="gps-gopro-panel" class="gps-gopro-panel" hidden>
+                <header><strong>GoPro 자동 동기화</strong><button id="gps-gopro-close" type="button" aria-label="GoPro 영상 닫기">×</button></header>
+                <div class="gps-gopro-video-grid">
+                  <div class="gps-gopro-video-slot gps-gopro-primary-slot">
+                    <div class="gps-gopro-video-label"><span id="gps-gopro-primary-label"></span><strong id="gps-gopro-primary-speed">--.- <em>km/h</em></strong></div>
+                    <video id="gps-gopro-video" playsinline muted preload="metadata"></video>
+                    <div id="gps-youtube-player" class="gps-youtube-player" aria-label="YouTube 기준 영상"></div>
+                    <button id="gps-gopro-primary-audio" class="gps-video-audio-toggle" type="button" aria-label="기준 영상 소리 켜기" aria-pressed="false">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="sound-waves" d="M16 8.2a5 5 0 0 1 0 7.6M18.5 5.7a8.5 8.5 0 0 1 0 12.6"/></svg>
+                    </button>
+                  </div>
+                  <div class="gps-gopro-video-slot gps-gopro-compare-slot">
+                    <div class="gps-gopro-video-label"><span id="gps-gopro-compare-label"></span><strong id="gps-gopro-compare-speed">--.- <em>km/h</em></strong></div>
+                    <video id="gps-gopro-compare-video" playsinline muted preload="metadata"></video>
+                    <div id="gps-youtube-compare-player" class="gps-youtube-player" aria-label="YouTube 비교 영상"></div>
+                    <button id="gps-gopro-compare-audio" class="gps-video-audio-toggle" type="button" aria-label="비교 영상 소리 켜기" aria-pressed="false">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="sound-waves" d="M16 8.2a5 5 0 0 1 0 7.6M18.5 5.7a8.5 8.5 0 0 1 0 12.6"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <output id="gps-gopro-status"></output>
+              </div>
+              <div id="gps-lap-map-legend" class="gps-lap-map-legend" hidden></div>
+              <div id="gps-fullscreen-lap-times" class="gps-fullscreen-lap-times" hidden></div>
+              <div class="gps-fullscreen-speed">
+                <span>GPS SPEED</span>
+                <strong id="gps-fullscreen-speed-value">0.0</strong>
+                <em>km/h</em>
+              </div>
+              <button id="gps-fullscreen-detail-toggle" class="gps-fullscreen-detail-toggle" type="button">상세정보 ›</button>
+              <aside id="gps-sector-overlay" class="gps-sector-overlay" hidden>
+                <header><div><strong>체크포인트 구간 비교</strong><small>선택한 랩 기준</small></div><button id="gps-sector-overlay-close" type="button" aria-label="구간 비교 닫기">×</button></header>
+                <div id="gps-sector-overlay-table" class="gps-sector-table"></div>
+              </aside>
+              <aside id="gps-fullscreen-detail" class="gps-fullscreen-detail">
+                <div class="gps-detail-head"><strong>주행 상세정보</strong><span>현재 시점 동기화</span></div>
+                <section><header><b>Vehicle Speed</b><output id="gps-detail-speed-value">--.- km/h</output></header><canvas id="gps-detail-speed"></canvas></section>
+                <section><header><b>Engine RPM</b><output id="gps-detail-rpm-value">---- rpm</output></header><canvas id="gps-detail-rpm"></canvas></section>
+                <section><header><b>Gear</b><output id="gps-detail-gear-value">-</output></header><canvas id="gps-detail-gear"></canvas></section>
+                <section><header><b>Steering Angle</b><output id="gps-detail-steering-value">--.-°</output></header><canvas id="gps-detail-steering"></canvas></section>
+                <section><header><b>Throttle / Brake</b><output id="gps-detail-pedal-value">--.- / --.- %</output></header><canvas id="gps-detail-throttle-brake"></canvas></section>
+              </aside>
+
+              <!-- 지도 우측 상단: 현재 GPS 커서 지점의 조향각 위젯 -->
+              <div class="gps-steering-widget">
+                <div class="gps-steering-label">Steering</div>
+                <div class="gps-steering-wheel">
+                  <svg id="gps-steering-wheel-graphic" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="var(--text-primary)" stroke-width="8" fill="none" opacity="0.8" />
+                    <line x1="50" y1="50" x2="50" y2="90" stroke="var(--text-primary)" stroke-width="8" stroke-linecap="round" />
+                    <line x1="50" y1="50" x2="10" y2="50" stroke="var(--text-primary)" stroke-width="8" stroke-linecap="round" />
+                    <line x1="50" y1="50" x2="90" y2="50" stroke="var(--text-primary)" stroke-width="8" stroke-linecap="round" />
+                    <circle cx="50" cy="50" r="10" fill="var(--accent-magenta)" />
+                    <rect x="47" y="6" width="6" height="8" fill="var(--accent-orange)" rx="1" />
+                  </svg>
+                </div>
+                <div class="gps-steering-value"><span id="gps-cursor-steering">--.-</span><span class="gps-steering-unit">°</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="gps-imu-chart-grid">
+            <div class="motec-chart-card gps-imu-chart-card">
+              <div class="chart-label-bar imu-chart-label">
+                <div class="imu-label-main">
+                  <span class="signal-title">IMU Acceleration <em>[g]</em></span>
+                  <span class="imu-axis-legend">
+                    <button type="button" class="imu-axis-toggle imu-x active" data-chart="chart-imu-accel" data-dataset="0" aria-pressed="true"><i></i>전후 <small>X</small></button>
+                    <button type="button" class="imu-axis-toggle imu-y active" data-chart="chart-imu-accel" data-dataset="1" aria-pressed="true"><i></i>좌우 <small>Y</small></button>
+                  </span>
+                </div>
+              </div>
+              <div class="canvas-holder"><canvas id="chart-imu-accel"></canvas></div>
+            </div>
+            <div class="motec-chart-card gps-imu-chart-card">
+              <div class="chart-label-bar imu-chart-label">
+                <div class="imu-label-main">
+                  <span class="signal-title">IMU Gyroscope <em>[°/s]</em></span>
+                  <span class="imu-axis-legend">
+                    <button type="button" class="imu-axis-toggle imu-x active" data-chart="chart-imu-gyro" data-dataset="0" aria-pressed="true"><i></i>Roll <small>X</small></button>
+                    <button type="button" class="imu-axis-toggle imu-y active" data-chart="chart-imu-gyro" data-dataset="1" aria-pressed="true"><i></i>Pitch <small>Y</small></button>
+                    <button type="button" class="imu-axis-toggle imu-z active" data-chart="chart-imu-gyro" data-dataset="2" aria-pressed="true"><i></i>Yaw <small>Z</small></button>
+                  </span>
+                </div>
+              </div>
+              <div class="canvas-holder"><canvas id="chart-imu-gyro"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: GPS + IMU live metrics -->
+        <div class="view-column gps-metrics-column">
+          <div class="motec-chart-card gps-playback-card">
+            <button id="gps-play-toggle" class="gps-play-button" type="button" aria-label="주행 데이터 재생">▶ 재생</button>
+            <select id="gps-play-rate" class="gps-play-rate" aria-label="재생 속도">
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+              <option value="4">4×</option>
+            </select>
+            <span id="gps-play-time" class="gps-play-time">0.00 s</span>
+            <div class="gps-imu-filter-toggle">
+              <label for="gps-imu-lpf">
+                <input id="gps-imu-lpf" type="checkbox">
+                <span>IMU Low-pass filter</span>
+              </label>
+              <select id="gps-imu-lpf-frequency" aria-label="IMU 저역통과 필터 차단 주파수">
+                <option value="5" selected>5 Hz</option>
+                <option value="20">20 Hz</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="motec-chart-card gps-lap-card">
+            <div class="gps-lap-card-head">
+              <div>
+                <div class="gps-metric-label">GPS Lap Analysis</div>
+                <small id="gps-lap-fix-summary">피니시 라인을 설정하지 않았습니다.</small>
+              </div>
+              <strong id="gps-lap-count">0 LAPS</strong>
+            </div>
+            <div class="gps-lap-best">
+              <span>BEST LAP</span>
+              <strong id="gps-lap-best-time">--:--.---</strong>
+            </div>
+            <div class="gps-lap-average-distance">
+              <span>평균 주행거리</span>
+              <strong id="gps-lap-average-distance">--.- m</strong>
+            </div>
+            <div id="gps-lap-list" class="gps-lap-list">
+              <div class="gps-lap-empty">지도에서 피니시 라인의 양 끝을 클릭하면 자동으로 랩을 계산합니다.</div>
+            </div>
+          </div>
+
+          <div id="gps-sector-card" class="motec-chart-card gps-sector-card" hidden>
+            <div class="gps-sector-head">
+              <div>
+                <div class="gps-metric-label">Checkpoint Comparison</div>
+                <small>랩별 구간 기록 · 통과 속도 · 제동 및 가속 시점</small>
+              </div>
+              <strong id="gps-checkpoint-count">0 CP</strong>
+            </div>
+            <div id="gps-sector-table" class="gps-sector-table"></div>
+          </div>
+
+          <div class="motec-chart-card imu-g-card">
+            <div class="gps-metric-label">Vehicle G-Force</div>
+            <div class="imu-g-meter">
+              <span class="imu-g-axis imu-g-axis-forward">+전방 X</span>
+              <span class="imu-g-axis imu-g-axis-left">+좌측 Y</span>
+              <i class="imu-g-ring ring-1"></i>
+              <i class="imu-g-ring ring-2"></i>
+              <span class="imu-g-car">↑</span>
+              <div id="imu-g-dot" class="imu-g-dot"></div>
+            </div>
+            <div class="imu-live-values">
+              <span><b class="imu-x">전후 X</b><strong id="imu-accel-x">--.--</strong> g</span>
+              <span><b class="imu-y">좌우 Y</b><strong id="imu-accel-y">--.--</strong> g</span>
+            </div>
+          </div>
+
+          <div class="motec-chart-card imu-attitude-card">
+            <div class="gps-metric-label">IMU Attitude</div>
+            <div class="imu-attitude-grid">
+              <span>Roll<strong id="imu-roll">--.-°</strong></span>
+              <span>Pitch<strong id="imu-pitch">--.-°</strong></span>
+              <span>Yaw<strong id="imu-yaw">--.-°</strong></span>
+            </div>
+            <div class="imu-health-row">
+              <span>Battery <strong id="imu-battery">--%</strong></span>
+              <span>Age <strong id="imu-age">-- ms</strong></span>
+            </div>
+          </div>
+
+          <!-- 속도 비교 카드: GPS 속도 vs FL 휠속도 -->
+          <div class="motec-chart-card gps-speed-card" style="flex: none; height: auto; padding: 16px; border-radius: 12px;">
+            <div class="gps-metric-label">GPS Speed</div>
+            <div class="gps-speed-main">
+              <span id="gps-cursor-speed">0.0</span><span class="gps-speed-unit">km/h</span>
+            </div>
+
+            <div class="gps-speed-divider"></div>
+
+            <div class="gps-metric-label">FL Wheel Speed <small>(EMU VSS)</small></div>
+            <div class="gps-speed-sub">
+              <span id="gps-cursor-wheel-speed">0.0</span><span class="gps-speed-unit">km/h</span>
+            </div>
+
+            <div class="gps-speed-delta">
+              <span>휠 − GPS</span>
+              <strong id="gps-speed-delta">--</strong>
+            </div>
+          </div>
+
+          <!-- GPS Clock Time Card -->
+          <div class="motec-chart-card" style="flex: none; height: auto; padding: 16px; border-radius: 12px;">
+            <div style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">GPS Clock Time</div>
+            <div id="gps-cursor-time" style="font-size: 24px; font-weight: 700; font-family: monospace; color: #eab308; margin-top: 8px;">00:00:00.00</div>
+          </div>
+          
+          <!-- Satellites count Card -->
+          <div class="motec-chart-card" style="flex: none; height: auto; padding: 16px; border-radius: 12px;">
+            <div style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Satellites</div>
+            <div id="gps-cursor-sats" style="font-size: 28px; font-weight: 700; font-family: monospace; color: #10b981; margin-top: 8px;">0</div>
+          </div>
+          
+          <!-- Fix Quality Card -->
+          <div class="motec-chart-card" style="flex: none; height: auto; padding: 16px; border-radius: 12px;">
+            <div style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Fix Quality</div>
+            <div id="gps-cursor-qual" style="font-size: 20px; font-weight: 700; font-family: monospace; color: #3b82f6; margin-top: 8px;">No Fix</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [페이지 4] EMU 냉각 및 온도 분석 -->
+      <section id="page-temperature" class="temperature-panel page-view">
+        <div class="temperature-summary-grid">
+          <div class="temperature-metric coolant">
+            <span class="temperature-metric-label">냉각수 온도 · EMU CLT</span>
+            <strong><span id="temp-cursor-coolant">--</span> °C</strong>
+            <small>최고 <span id="temp-max-coolant">--</span> °C</small>
+          </div>
+          <div class="temperature-metric oil">
+            <span class="temperature-metric-label">엔진 오일 온도 · EMU Oil Temp</span>
+            <strong><span id="temp-cursor-oil">--</span> °C</strong>
+            <small>최고 <span id="temp-max-oil">--</span> °C</small>
+          </div>
+          <div class="temperature-metric intake">
+            <span class="temperature-metric-label">Intake Air Temperature</span>
+            <strong><span id="temp-cursor-iat">--</span> °C</strong>
+            <small>최고 <span id="temp-max-iat">--</span> °C</small>
+          </div>
+          <div class="temperature-metric ecu">
+            <span class="temperature-metric-label">ECU Temperature</span>
+            <strong><span id="temp-cursor-ecu">--</span> °C</strong>
+            <small>최고 <span id="temp-max-ecu">--</span> °C</small>
+          </div>
+        </div>
+
+        <div class="temperature-chart-grid">
+          <div class="motec-chart-card temperature-chart-card">
+            <div class="chart-label-bar">
+              <span class="signal-title color-blue">Cooling System — Coolant / Oil [°C] + FL Wheel Speed [km/h]</span>
+              <span class="temperature-source">EMU 0x602 · dual axis</span>
+            </div>
+            <div class="canvas-holder">
+              <canvas id="chart-coolant-oil"></canvas>
+            </div>
+          </div>
+          <div class="motec-chart-card temperature-chart-card">
+            <div class="chart-label-bar">
+              <span class="signal-title color-orange">Thermal Environment — Intake / ECU [°C]</span>
+              <span class="temperature-source">EMU 0x600 / 0x604</span>
+            </div>
+            <div class="canvas-holder">
+              <canvas id="chart-intake-ecu"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [페이지 5] 실시간 무선 텔레메트리 -->
+      <section id="page-realtime" class="realtime-panel page-view">
+
+        <!-- 접속 및 링크 상태 바 -->
+        <div class="rt-topbar">
+          <div class="rt-conn">
+            <span class="rt-conn-label">수신 서버</span>
+            <input type="text" id="rt-url" class="rt-url-input" spellcheck="false"
+                   placeholder="wss://your-rf-pc.example.com  또는  ws://192.168.0.10:8765">
+            <select id="rt-transport" class="rt-select" title="전송 방식">
+              <option value="auto">자동</option>
+              <option value="ws">WebSocket</option>
+              <option value="sse">SSE</option>
+              <option value="poll">HTTP 폴링</option>
+            </select>
+            <button id="rt-connect" class="btn rt-btn rt-btn-primary">연결</button>
+            <button id="rt-demo" class="btn rt-btn" title="하드웨어 없이 UI를 시험합니다">데모 모드</button>
+          </div>
+
+          <div class="rt-link">
+            <div class="rt-signal" id="rt-signal">
+              <div class="rt-signal-bars" id="rt-signal-bars">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <div class="rt-signal-text">
+                <strong id="rt-signal-grade">신호없음</strong>
+                <small id="rt-signal-reason">연결되지 않음</small>
+              </div>
+            </div>
+            <div class="rt-stats">
+              <div class="rt-stat"><label>수신률</label><b id="rt-stat-rate">0.0 Hz</b></div>
+              <div class="rt-stat"><label>손실률</label><b id="rt-stat-loss">--</b></div>
+              <div class="rt-stat"><label>RSSI</label><b id="rt-stat-rssi">-- dBm</b></div>
+              <div class="rt-stat"><label>SNR</label><b id="rt-stat-snr">-- dB</b></div>
+              <div class="rt-stat"><label>최종 수신</label><b id="rt-stat-age">--</b></div>
+              <div class="rt-stat"><label>총 패킷</label><b id="rt-stat-count">0</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 실시간 카드 그리드 (JS가 채널을 감지해 생성) -->
+        <div class="rt-grid" id="rt-grid">
+          <div class="rt-empty" id="rt-empty">
+            <div class="rt-empty-icon">📡</div>
+            <div class="rt-empty-title">실시간 텔레메트리 대기 중</div>
+            <div class="rt-empty-text">
+              차량과 RF 통신하는 PC가 중계 서버를 실행하면, 그 주소를 위에 입력하고 <b>연결</b>을 누르세요.<br>
+              장비 없이 화면만 확인하려면 <b>데모 모드</b>를 누르면 됩니다.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [페이지 6] 사용자 도움말 -->
+      <section id="page-help" class="help-panel page-view">
+        <div class="help-hero">
+          <div>
+            <span class="help-eyebrow">NSSUR TELEMETRY USER GUIDE</span>
+            <h1>처음 사용하는 사람을 위한 도움말</h1>
+            <p>CSV를 여는 것부터 그래프 분석, GPS 랩 비교, GoPro·YouTube 영상 동기화까지 순서대로 확인할 수 있습니다.</p>
+          </div>
+          <div class="help-hero-badge"><b>?</b><span>모든 분석은<br>브라우저에서 실행됩니다</span></div>
+        </div>
+
+        <div class="help-quick-start" id="help-start">
+          <article><b>01</b><div><strong>CSV 열기</strong><p>오른쪽 위 <em>CSV 열기</em>를 누르거나 CSV 파일을 화면에 끌어 놓습니다.</p></div></article>
+          <article><b>02</b><div><strong>분석 페이지 선택</strong><p>상단의 1~5번 탭에서 확인하려는 데이터를 선택합니다.</p></div></article>
+          <article><b>03</b><div><strong>시점과 구간 조절</strong><p>아래 타임라인과 그래프의 마우스 조작으로 원하는 구간을 자세히 봅니다.</p></div></article>
+        </div>
+
+        <div class="help-layout">
+          <nav class="help-toc" aria-label="도움말 목차">
+            <strong>목차</strong>
+            <a href="#help-basic"><span>시작</span>기본 조작</a>
+            <a href="#help-page1"><span>1</span>종합 주행 분석</a>
+            <a href="#help-page2"><span>2</span>입력·서스펜션</a>
+            <a href="#help-page3"><span>3</span>GPS·IMU·랩</a>
+            <a href="#help-video"><span>▶</span>영상 동기화</a>
+            <a href="#help-page4"><span>4</span>냉각·온도</a>
+            <a href="#help-page5"><span>5</span>실시간 텔레메트리</a>
+            <a href="#help-trouble"><span>!</span>문제 해결</a>
+          </nav>
+
+          <main class="help-content">
+            <section class="help-section" id="help-basic">
+              <div class="help-section-title"><span>시작</span><div><h2>CSV와 기본 조작</h2><p>분석을 시작할 때 가장 먼저 사용하는 기능입니다.</p></div></div>
+              <div class="help-callout"><strong>권장 순서</strong><span>CSV 열기 → 필요한 페이지 선택 → 전체 구간 확인 → 관심 구간 확대 → 커서로 정밀 수치 확인</span></div>
+              <div class="help-grid two">
+                <article class="help-card">
+                  <h3>CSV 불러오기</h3>
+                  <ol><li>상단 오른쪽의 <b>CSV 열기</b>를 누릅니다.</li><li>텔레메트리 CSV를 선택합니다.</li><li>오른쪽 상태 표시가 파일명으로 바뀌면 준비 완료입니다.</li></ol>
+                  <p class="help-note">CSV를 화면 아무 곳에나 끌어 놓아도 동일하게 열립니다.</p>
+                </article>
+                <article class="help-card">
+                  <h3>그래프와 커서</h3>
+                  <ul><li><b>마우스 휠:</b> 마우스 커서가 있는 시점을 기준으로 확대·축소</li><li><b>그래프 드래그:</b> GPS·IMU 페이지에서 클릭한 상태로 움직일 때만 시점 이동</li><li><b>← / →:</b> 데이터 커서 미세 이동</li><li><b>아래 타임라인:</b> 전체 구간에서 현재 시점 또는 표시 구간 이동</li></ul>
+                </article>
+              </div>
+              <div class="help-shortcuts">
+                <span><kbd>1</kbd>~<kbd>6</kbd> 페이지 이동</span><span><kbd>Space</kbd> GPS 재생·정지</span><span><kbd>←</kbd><kbd>→</kbd> 커서 이동</span><span><kbd>Esc</kbd> GPS 전체화면 종료</span>
+              </div>
+            </section>
+
+            <section class="help-section" id="help-page1">
+              <div class="help-section-title"><span>1</span><div><h2>종합 주행 분석</h2><p>속도, 엔진, 기어, 조향과 페달 입력을 한 화면에서 비교합니다.</p></div><button type="button" data-help-tab="general">1페이지 열기</button></div>
+              <div class="help-grid two">
+                <article class="help-card"><h3>차량 상태</h3><ul><li>FL·RL·RR 휠 속도 비교</li><li>엔진 RPM과 기어 변화 확인</li><li>스로틀과 브레이크가 겹치는 구간 확인</li></ul></article>
+                <article class="help-card"><h3>조향 그래프</h3><ul><li><b>Yaw</b>와 <b>횡G</b> 버튼을 눌러 선을 켜거나 끕니다.</li><li>핸들 옆 톱니를 눌러 영점·반전·조향 Y축 범위를 설정합니다.</li><li>조향 Y축 설정은 표시 범위만 바꾸며 실제 조향각 값은 바꾸지 않습니다.</li></ul></article>
+              </div>
+            </section>
+
+            <section class="help-section" id="help-page2">
+              <div class="help-section-title"><span>2</span><div><h2>입력 및 서스펜션 분석</h2><p>운전자 입력과 네 바퀴의 서스펜션 움직임을 비교합니다.</p></div><button type="button" data-help-tab="diag">2페이지 열기</button></div>
+              <div class="help-grid two">
+                <article class="help-card"><h3>입력 분석</h3><p>스로틀·브레이크·조향 그래프의 세로 커서는 같은 시점을 나타냅니다. 코너 진입과 탈출에서 입력 순서를 비교할 수 있습니다.</p></article>
+                <article class="help-card"><h3>서스펜션 보정</h3><ol><li>FL·FR·RL·RR 제목 옆 톱니를 누릅니다.</li><li>바퀴별 오프셋을 mm 단위로 입력합니다.</li><li>표시값은 <b>raw × 고정 계수 + 오프셋</b>으로 계산됩니다.</li></ol><p class="help-note">보정값은 이 브라우저에 저장되며 원본 CSV는 변경되지 않습니다.</p></article>
+              </div>
+            </section>
+
+            <section class="help-section" id="help-page3">
+              <div class="help-section-title"><span>3</span><div><h2>GPS + IMU 주행 분석</h2><p>실제 주행 위치와 차량 움직임을 같은 시각으로 재생합니다.</p></div><button type="button" data-help-tab="gps">3페이지 열기</button></div>
+              <div class="help-grid two">
+                <article class="help-card"><h3>재생과 IMU</h3><ul><li><b>재생</b> 또는 <kbd>Space</kbd>로 시작·정지합니다.</li><li>배속은 0.5×, 1×, 2×, 4× 중 선택합니다.</li><li>IMU LPF는 끄거나 5 Hz·20 Hz 중 선택합니다.</li><li>X·Y·Z 축 버튼으로 필요한 IMU 선만 표시합니다.</li></ul></article>
+                <article class="help-card"><h3>GPS 전체화면</h3><ul><li><b>GPS 전체화면</b>을 누르면 지도 중심 분석 화면이 열립니다.</li><li><b>상세정보</b>를 켜면 속도·RPM·기어·조향·페달 그래프가 표시됩니다.</li><li>재생 중 지도와 상세 그래프 커서는 같은 시점으로 움직입니다.</li></ul></article>
+              </div>
+              <article class="help-card help-wide-card">
+                <h3>피니시 라인과 랩 계산</h3>
+                <div class="help-steps"><span><b>1</b>피니시 라인 설정</span><span><b>2</b>지도에서 라인 양 끝 클릭</span><span><b>3</b>자동 계산된 LAP 확인</span><span><b>4</b>원하는 LAP 선택·비교</span></div>
+                <ul><li>라인은 차량 경로가 실제로 통과하도록 트랙 폭을 가로질러 그립니다.</li><li>랩을 한 번 누르면 해당 랩만 표시되고, 여러 랩을 누르면 경로와 데이터를 겹쳐 비교합니다.</li><li>랩 상세의 <b>시작 지점</b>·<b>종료 지점</b> 버튼은 재생을 멈추고 해당 시점으로 이동합니다.</li><li>별표가 붙은 LAP이 베스트 랩입니다.</li></ul>
+              </article>
+            </section>
+
+            <section class="help-section" id="help-video">
+              <div class="help-section-title"><span>▶</span><div><h2>GoPro·YouTube 영상 동기화</h2><p>GPS 전체화면에서 영상과 텔레메트리를 함께 재생합니다.</p></div></div>
+              <div class="help-grid two">
+                <article class="help-card">
+                  <div class="help-card-kicker local">LOCAL MP4</div><h3>GoPro 원본 파일</h3>
+                  <ol><li>CSV를 먼저 엽니다.</li><li>GPS 전체화면에서 <b>GoPro MP4</b>를 누릅니다.</li><li>원본 MP4를 선택합니다.</li><li>영상 내부 시작 시각과 CSV 시간이 겹치면 자동 연결됩니다.</li></ol>
+                  <p class="help-note">파일의 수정일이 아니라 MP4 내부 시작 시각을 사용합니다.</p>
+                </article>
+                <article class="help-card">
+                  <div class="help-card-kicker youtube">YOUTUBE</div><h3>YouTube 영상</h3>
+                  <ol><li>영상을 공개 또는 일부 공개로 업로드합니다.</li><li>제목에 촬영 시작 시각을 넣습니다.</li><li>GPS 전체화면에서 <b>YouTube</b>를 누르고 링크를 붙여 넣습니다.</li><li>제목과 CSV 시간이 겹치면 자동 연결됩니다.</li></ol>
+                </article>
+              </div>
+              <div class="help-code"><span>권장 YouTube 제목</span><code>NS26F_2026-08-11_15-13-24_KST_GX014229</code></div>
+              <article class="help-video-title-tool">
+                <div class="help-video-title-head">
+                  <div>
+                    <span>YOUTUBE UPLOAD HELPER</span>
+                    <h3>영상 파일로 제목 자동 만들기</h3>
+                    <p>GoPro MP4를 선택하면 영상 내부 시작 시각을 읽어 YouTube 제목과 선택용 설명을 자동 생성합니다. 영상은 업로드되지 않고 이 브라우저에서만 확인합니다.</p>
+                  </div>
+                  <label for="help-video-title-file" class="help-video-file-button">MP4 선택</label>
+                  <input id="help-video-title-file" type="file" accept="video/mp4,.mp4" hidden>
+                </div>
+                <p id="help-video-title-status" class="help-video-title-status">먼저 원본 MP4 파일을 선택하세요.</p>
+                <div class="help-video-output">
+                  <label for="help-video-title-output">YouTube 제목 <small>필수</small></label>
+                  <div><input id="help-video-title-output" type="text" readonly placeholder="파일을 선택하면 자동으로 생성됩니다"><button id="help-video-title-copy" type="button" disabled>제목 복사</button></div>
+                </div>
+                <div class="help-video-output description">
+                  <label for="help-video-description-output">YouTube 설명 <small>선택 사항</small></label>
+                  <div><textarea id="help-video-description-output" rows="4" readonly placeholder="설명은 동기화에 필요하지 않습니다."></textarea><button id="help-video-description-copy" type="button" disabled>설명 복사</button></div>
+                </div>
+                <p class="help-note"><b>제목은 반드시 그대로 사용하세요.</b> 사이트는 제목의 KST 시작 시각으로 CSV와 영상을 맞춥니다. 설명란은 비워도 동기화됩니다.</p>
+              </article>
+              <div class="help-callout warn"><strong>중요</strong><span>YouTube 영상의 앞부분을 자르거나 인트로를 추가하면 제목의 시작 시각과 실제 영상 0초가 달라져 동기화가 어긋납니다.</span></div>
+            </section>
+
+            <section class="help-section" id="help-page4">
+              <div class="help-section-title"><span>4</span><div><h2>냉각 및 온도 분석</h2><p>냉각수·오일·흡기·ECU 온도의 변화와 최고값을 확인합니다.</p></div><button type="button" data-help-tab="temperature">4페이지 열기</button></div>
+              <article class="help-card"><p>상단 요약 카드에서 현재 온도와 최고 온도를 확인하고, 아래 그래프에서 시간에 따른 변화와 차량 속도의 관계를 살펴봅니다.</p></article>
+            </section>
+
+            <section class="help-section" id="help-page5">
+              <div class="help-section-title"><span>5</span><div><h2>실시간 텔레메트리</h2><p>차량 RF 중계 서버에서 들어오는 데이터를 실시간으로 표시합니다.</p></div><button type="button" data-help-tab="realtime">5페이지 열기</button></div>
+              <div class="help-grid two"><article class="help-card"><h3>실제 연결</h3><ol><li>수신 서버 주소를 입력합니다.</li><li>전송 방식을 선택하거나 자동으로 둡니다.</li><li><b>연결</b>을 누르고 수신률·손실률·RSSI·SNR을 확인합니다.</li></ol></article><article class="help-card"><h3>화면 시험</h3><p>하드웨어나 중계 서버가 없을 때 <b>데모 모드</b>를 누르면 가상 데이터로 카드와 그래프 동작을 확인할 수 있습니다.</p></article></div>
+            </section>
+
+            <section class="help-section" id="help-trouble">
+              <div class="help-section-title"><span>!</span><div><h2>문제 해결</h2><p>자주 발생하는 상황과 확인할 항목입니다.</p></div></div>
+              <div class="help-faq">
+                <details open><summary>GPS 지도에 경로가 보이지 않습니다.</summary><p>CSV에 유효한 위도·경도와 GPS Fix가 포함되어 있는지 확인하고, CSV를 다시 연 뒤 3페이지로 이동합니다.</p></details>
+                <details><summary>랩이 계산되지 않습니다.</summary><p>피니시 라인이 실제 주행 경로를 완전히 가로지르는지 확인하고 최소 랩 시간을 실제 랩타임보다 짧게 설정합니다.</p></details>
+                <details><summary>GoPro 또는 YouTube 영상이 연결되지 않습니다.</summary><p>CSV와 영상의 KST 시간 구간이 일부라도 겹쳐야 합니다. YouTube는 제목 형식과 공개 상태, HD 처리 완료 여부도 확인합니다.</p></details>
+                <details><summary>수정된 사이트가 이전 화면으로 보입니다.</summary><p>브라우저를 새로고침합니다. 계속 같다면 강력 새로고침을 사용하거나 새 탭에서 운영 주소를 다시 엽니다.</p></details>
+              </div>
+            </section>
+          </main>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 타임라인 네비게이터 컨트롤러 (시간 범위 설정 및 드래그 스크롤바) -->
+    <section class="timeline-navigator">
+      <div class="zoom-control-group">
+        <span class="nav-label">🔍 구간 설정 (초):</span>
+        <input type="number" id="input-start-time" class="num-input" value="0" min="0" step="0.5">
+        <span class="wave-tilde">~</span>
+        <input type="number" id="input-end-time" class="num-input" value="30" min="0" step="0.5">
+        <button id="btn-apply-zoom" class="btn btn-nav-action">적용</button>
+        <button id="btn-reset-zoom" class="btn btn-nav-action">전체 보기</button>
+      </div>
+
+      <div class="scroll-control-group">
+        <span class="nav-label" id="lbl-scroll-type">📊 그래프 좌우 스크롤:</span>
+        <input type="range" id="timeline-scroll-bar" class="timeline-slider" min="0" max="100" value="0">
+        <span class="current-time-indicator" id="current-time-val">0.00s</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- 드래그앤드롭 파일 업로드 시각적 오버레이 -->
+  <div id="drag-drop-overlay" class="drag-drop-overlay">
+    <div class="drag-drop-box">
+      <div class="drag-drop-icon">📂</div>
+      <div class="drag-drop-text">NSSUR 텔레메트리 로그 파일 업로드</div>
+      <div class="drag-drop-subtext">CSV 파일을 화면 아무 곳에나 놓아주세요. 바로 시각화가 시작됩니다.</div>
+    </div>
+  </div>
+
+  <dialog id="gps-youtube-dialog" class="gps-youtube-dialog">
+    <form id="gps-youtube-form" method="dialog">
+      <div class="gps-youtube-dialog-head">
+        <div>
+          <strong>YouTube 영상 연결</strong>
+          <span>일부 공개 또는 공개 영상의 링크를 입력하세요.</span>
+        </div>
+        <button id="gps-youtube-cancel" type="button" aria-label="닫기">×</button>
+      </div>
+      <label for="gps-youtube-url">YouTube 링크</label>
+      <div class="gps-youtube-url-field">
+        <input id="gps-youtube-url" type="url" inputmode="url" autocomplete="off" placeholder="https://youtu.be/영상ID" required>
+        <button id="gps-youtube-url-clear" type="button" aria-label="YouTube 링크 지우기" title="링크 지우기">×</button>
+      </div>
+      <p>제목 형식: <code>NS26F_2026-08-11_15-13-24.000_KST_GX014229</code></p>
+      <div class="gps-youtube-dialog-actions">
+        <button id="gps-youtube-connect" type="submit">영상 연결</button>
+        <button id="gps-youtube-cancel-bottom" type="button">취소</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Custom JS -->
+  <script src="suspension.js?v=20260810-1"></script>
+  <script src="filters.js?v=20260812-1"></script>
+  <script src="steering.js?v=20260812-1"></script>
+  <script src="realtime.js?v=20260802-4"></script>
+  <script src="app.js?v=20260816-3"></script>
+</body>
+</html>

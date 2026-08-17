@@ -1,0 +1,12 @@
+﻿# KiCad local/project-specific files
+*.kicad_prl
+fp-info-cache
+*-backups/
+__pycache__/
+
+# Lock files
+*.lck
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
