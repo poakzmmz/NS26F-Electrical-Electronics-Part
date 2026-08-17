@@ -16,6 +16,9 @@ NS26F-Electrical-Electronics-Part/
 │           └── NS26F_BrakeLight/        # KiCad 및 생산 파일
 │
 ├── dashboard/
+│   ├── display-ui/
+│   │   └── nextion/
+│   │       └── 260815_Dashboard_UI.HMI  # Nextion 디스플레이 UI
 │   ├── datalogger/
 │   │   ├── hardware/
 │   │   │   └── imported-source/
@@ -57,6 +60,7 @@ NS26F-Electrical-Electronics-Part/
 | Brake Light HW | KiCad 프로젝트, BOM, 생산 파일 | `brake-light/` |
 | Datalogger HW | KiCad 프로젝트, BOM, 생산 파일 | `dashboard/datalogger/hardware/` |
 | Datalogger FW | STM32CubeIDE 프로젝트 | `dashboard/datalogger/firmware/` |
+| Dashboard UI | Nextion Editor HMI 프로젝트 | `dashboard/display-ui/nextion/` |
 | Shift Light HW | KiCad 프로젝트, BOM, Gerber | `dashboard/shiftlight/hardware/` |
 | Telemetry Sender/Receiver | TTGO T3 LoRa32, 915 MHz | `telemetry/vehicle-node/`, `telemetry/receiver/` |
 | Telemetry Local Viewer | Serial 표시 및 CSV 저장 | `telemetry/viewer/lora-monitor/` |
