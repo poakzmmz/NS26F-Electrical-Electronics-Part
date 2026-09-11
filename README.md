@@ -67,5 +67,3 @@ NS26F-Electrical-Electronics-Part/
 | Telemetry Viewer | CSV 분석 및 실시간 데이터 뷰어 | `telemetry/viewer/telemetry-dashboard/` |
 | Harness | 현재 자료 없음 | `harness/` |
 | Shift Light FW | 현재 자료 없음 | `dashboard/shiftlight/firmware/` |
-
-데이터로거 펌웨어의 기존 Git 이력과 KiCad 자동 저장 이력은 `archive/`에 로컬 보관되어 있으며 저장소에는 포함되지 않는다.
