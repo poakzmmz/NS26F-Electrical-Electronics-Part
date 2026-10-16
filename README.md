@@ -138,21 +138,21 @@ Core/
 <table>
 <tr>
 <td width="50%" align="center">
-<img src="docs/images/portfolio/datalogger_pcb_top.jpg" alt="Datalogger PCB" width="100%"><br>
+<img src="docs/images/portfolio/datalogger_pcb_top.JPG" alt="Datalogger PCB" width="100%"><br>
 <sub>STM32 기반 Data Logger PCB — 직접 설계·제작한 V1 보드</sub>
 </td>
 <td width="50%" align="center">
-<img src="docs/images/portfolio/datalogger_bench_test.jpg" alt="Integration test" width="100%"><br>
+<img src="docs/images/portfolio/datalogger_bench_test.JPG" alt="Integration test" width="100%"><br>
 <sub>차량 탑재 전/개발 중 전장 Integration Test</sub>
 </td>
 </tr>
 <tr>
 <td width="50%" align="center">
-<img src="docs/images/portfolio/datalogger_vehicle_installation.jpg" alt="Vehicle installation" width="100%"><br>
+<img src="docs/images/portfolio/datalogger_data_installation.JPG" alt="Vehicle installation" width="100%"><br>
 <sub>Dashboard 내부 실제 차량 장착 및 전장 통합</sub>
 </td>
 <td width="50%" align="center">
-<img src="docs/images/portfolio/vehicle_harness.jpg" alt="Vehicle harness" width="100%"><br>
+<img src="docs/images/portfolio/vehicle_harness.JPG" alt="Vehicle harness" width="100%"><br>
 <sub>차량 Harness 제작 및 배선 통합</sub>
 </td>
 </tr>
