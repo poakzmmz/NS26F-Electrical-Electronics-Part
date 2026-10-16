@@ -622,4 +622,7 @@ void LED_Set(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState state);
 void LED_BlinkCode(uint8_t code);
 void LED_BlinkCodeDetail(uint8_t code, uint8_t detail);
 
+void App_Init(void);
+void App_Process(void);
+
 #endif
