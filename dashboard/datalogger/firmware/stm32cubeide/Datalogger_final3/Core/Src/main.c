@@ -143,8 +143,9 @@ App_Init();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-App_Process();
-/* USER CODE END 3 */
+    App_Process();
+  }
+  /* USER CODE END 3 */
 }
 
 /**
