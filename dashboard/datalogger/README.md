@@ -41,11 +41,11 @@ STM32F405RGT6 기반 차량 탑재형 데이터 수집장치입니다.
 <table>
 <tr>
 <td width="50%" align="center">
-<img src="../../docs/images/portfolio/datalogger_pcb_top.jpg" alt="Datalogger PCB top" width="100%"><br>
+<img src="../../docs/images/portfolio/datalogger_pcb_top.JPG" alt="Datalogger PCB top" width="100%"><br>
 <sub>Data Logger PCB — MCU, microSD, USB Type-C 및 차량 Connector 구성</sub>
 </td>
 <td width="50%" align="center">
-<img src="../../docs/images/portfolio/datalogger_pcb_bottom.jpg" alt="Datalogger PCB bottom" width="100%"><br>
+<img src="../../docs/images/portfolio/datalogger_pcb_bottom.JPG" alt="Datalogger PCB bottom" width="100%"><br>
 <sub>Data Logger PCB 반대면 — Interface 회로 및 배선 영역</sub>
 </td>
 </tr>
@@ -81,11 +81,11 @@ CubeMX `.ioc` 파일의 CAN 계산값과 실제 런타임 설정이 다릅니다
 <table>
 <tr>
 <td width="50%" align="center">
-<img src="../../docs/images/portfolio/datalogger_bench_test.jpg" alt="Datalogger integration test" width="100%"><br>
+<img src="../../docs/images/portfolio/datalogger_bench_test.JPG" alt="Datalogger integration test" width="100%"><br>
 <sub>차량 탑재 전/개발 중 Integration Test — Data Logger, Dashboard 및 센서 인터페이스 확인</sub>
 </td>
 <td width="50%" align="center">
-<img src="../../docs/images/portfolio/datalogger_vehicle_installation.jpg" alt="Datalogger vehicle installation" width="100%"><br>
+<img src="../../docs/images/portfolio/datalogger_data_installation.JPG" alt="Datalogger vehicle installation" width="100%"><br>
 <sub>Dashboard 내부 실제 차량 장착 및 전장 시스템 통합</sub>
 </td>
 </tr>
