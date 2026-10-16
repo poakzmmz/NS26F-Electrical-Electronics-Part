@@ -198,10 +198,7 @@ NS26F-Electrical-Electronics-Part/
 │   └── shiftlight/
 ├── telemetry/
 ├── harness/
-├── docs/
-├── shared/
-├── releases/
-└── archive/
+└── docs/
 ```
 
 ## Documents
