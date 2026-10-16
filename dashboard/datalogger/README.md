@@ -36,6 +36,23 @@ STM32F405RGT6 기반 차량 탑재형 데이터 수집장치입니다.
 
 > 현재 펌웨어는 SD 안정성을 위해 1-bit SDIO 운용 경로를 사용합니다. KiCad/초기 CubeMX 구성에는 4-bit SDIO 관련 설정이 남아 있을 수 있습니다.
 
+## Hardware Implementation
+
+<table>
+<tr>
+<td width="50%" align="center">
+<img src="../../docs/images/portfolio/datalogger_pcb_top.jpg" alt="Datalogger PCB top" width="100%"><br>
+<sub>Data Logger PCB — MCU, microSD, USB Type-C 및 차량 Connector 구성</sub>
+</td>
+<td width="50%" align="center">
+<img src="../../docs/images/portfolio/datalogger_pcb_bottom.jpg" alt="Datalogger PCB bottom" width="100%"><br>
+<sub>Data Logger PCB 반대면 — Interface 회로 및 배선 영역</sub>
+</td>
+</tr>
+</table>
+
+회로·PCB 원본과 생산 파일은 `hardware/`에 공개되어 있습니다. 사진은 실제 제작·실장된 V1 보드입니다.
+
 ## Firmware Architecture
 
 현재 공개 펌웨어에는 다음 기능이 통합되어 있습니다.
@@ -59,7 +76,20 @@ CubeMX `.ioc` 파일의 CAN 계산값과 실제 런타임 설정이 다릅니다
 
 현재 펌웨어에서는 `USER_CAN1_Apply500Kbps()`에서 CAN1을 재초기화하여 **500 kbps**로 운용합니다. 따라서 포트폴리오 검토 시 실제 동작 기준은 런타임 설정을 기준으로 봐주시면 됩니다.
 
-## Verification
+## Vehicle Integration & Verification
+
+<table>
+<tr>
+<td width="50%" align="center">
+<img src="../../docs/images/portfolio/datalogger_bench_test.jpg" alt="Datalogger integration test" width="100%"><br>
+<sub>차량 탑재 전/개발 중 Integration Test — Data Logger, Dashboard 및 센서 인터페이스 확인</sub>
+</td>
+<td width="50%" align="center">
+<img src="../../docs/images/portfolio/datalogger_vehicle_installation.jpg" alt="Datalogger vehicle installation" width="100%"><br>
+<sub>Dashboard 내부 실제 차량 장착 및 전장 시스템 통합</sub>
+</td>
+</tr>
+</table>
 
 개발 과정은 다음 순서로 진행했습니다.
 
@@ -71,6 +101,8 @@ CubeMX `.ioc` 파일의 CAN 계산값과 실제 런타임 설정이 다릅니다
 6. Fault/Buffer 처리 개선 후 재검증
 
 완성된 Data Logger는 Formula Student 차량에 탑재되어 약 200 km의 누적 테스트 주행 및 대회 환경에서 사용했습니다.
+
+> 위 Integration Test 사진은 개발 단계의 임시 배선을 포함합니다. 최종 배선 외관이 아니라 실제 차량 시스템과의 인터페이스 및 기능 검증 과정을 보여주기 위한 기록입니다.
 
 ## Files
 

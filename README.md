@@ -72,6 +72,33 @@ Data Logger는 여러 형태의 차량 데이터를 공통 시간축에서 수�
 
 상세 내용은 [Datalogger 문서](dashboard/datalogger/README.md)를 참고하십시오.
 
+## Hardware & Vehicle Validation
+
+<table>
+<tr>
+<td width="50%" align="center">
+<img src="docs/images/portfolio/datalogger_pcb_top.jpg" alt="Datalogger PCB" width="100%"><br>
+<sub>STM32 기반 Data Logger PCB — 직접 설계·제작한 V1 보드</sub>
+</td>
+<td width="50%" align="center">
+<img src="docs/images/portfolio/datalogger_bench_test.jpg" alt="Integration test" width="100%"><br>
+<sub>차량 탑재 전/개발 중 전장 Integration Test</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<img src="docs/images/portfolio/datalogger_vehicle_installation.jpg" alt="Vehicle installation" width="100%"><br>
+<sub>Dashboard 내부 실제 차량 장착 및 전장 통합</sub>
+</td>
+<td width="50%" align="center">
+<img src="docs/images/portfolio/vehicle_harness.jpg" alt="Vehicle harness" width="100%"><br>
+<sub>차량 Harness 제작 및 배선 통합</sub>
+</td>
+</tr>
+</table>
+
+> Integration Test 사진은 개발/검증 단계의 임시 배선을 포함합니다. 최종 양산 배선 품질을 나타내기 위한 사진이 아니라 실제 차량에서 인터페이스와 기능을 확인한 개발 과정 기록입니다.
+
 ### Other Electrical Modules
 
 | Module | Description | Path |
