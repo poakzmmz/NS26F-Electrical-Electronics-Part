@@ -102,7 +102,7 @@ flowchart LR
 
 즉 초기 명세를 그대로 유지하기보다 실제 차량 환경에서 발생하는 안정성 문제를 기준으로 설계를 조정했습니다.
 
-초기 요구사항 원본은 [Software Requirement](dashboard/datalogger/hardware/imported-source/NS26F-Datalogger-HW/sw요구사항.txt)에서 확인할 수 있습니다.
+초기 요구사항과 실제 구현 중 변경된 설계 판단은 [Software Requirements & Design Decisions](dashboard/datalogger/firmware/REQUIREMENTS.md)에 정리했습니다.
 
 ## Firmware Structure
 
