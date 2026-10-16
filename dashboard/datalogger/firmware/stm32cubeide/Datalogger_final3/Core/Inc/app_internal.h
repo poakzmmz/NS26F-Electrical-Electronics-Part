@@ -134,32 +134,19 @@ typedef enum {
   SD_LOG_FLUSH_REASON_LEGACY = 4
 } SD_LogFlushReason_t;
 
-#define SD_BRINGUP_TEST_FILE "0:/DATALOG_TEST.TXT"
-#define SD_BRINGUP_TEST_PAYLOAD                                                \
-  "STM32F405 1-bit SDIO FATFS write/read test OK\r\nRemove card and check "    \
   "this file on your PC.\r\n"
 #define SD_LED_ERR_HAL_INIT 6U
 #define SD_LED_ERR_WIDE_BUS 7U
 #define SD_LED_ERR_FATFS 8U
-#define SD_LED_ERR_TIM 10U
 #define SD_LED_ERR_MOUNT 11U
-#define SD_LED_ERR_OPEN_WHEEL 13U
-#define SD_LED_ERR_OPEN_ADC 13U
 #define SD_LED_ERR_WRITE_HEADER 14U
 #define SD_LED_ERR_SYNC 15U
 #define SD_LED_ERR_WRITE_LOG 16U
 #define SD_LED_ERR_ADC_CONFIG 17U
-#define SD_LED_ERR_CAN_CONFIG 18U
 #define SD_LED_ERR_OPEN_EMU 19U
-#define SD_LED_ERR_GNSS_UART 20U
 #define SD_FAULT_LOG_FILE "0:/FAULT.TXT"
 
-#define USB_MSC_ENABLE 0U
-
 #define GNSS_RX_QUEUE_LEN 16384U
-#define GNSS_RX_DRAIN_CHUNK_SIZE 128U
-#define GNSS_LOG_FLUSH_IDLE_MS 5000U
-#define GNSS_LOG_SYNC_INTERVAL_MS 60000U
 #define SD_LOG_SYNC_FAIL_FATAL 0U
 #define SD_BRINGUP_USE_4BIT_BUS 0U
 #define SD_LOG_PATH_LEN 32U
@@ -190,11 +177,8 @@ typedef enum {
 #define SPEED_MIN_VALID_DELTA_US 800U
 #define SPEED_FILTER_ALPHA_NUM 1U
 #define SPEED_FILTER_ALPHA_DEN 4U
-#define SPEED_LOG_INTERVAL_MS 100U
 #define SD_LOG_BUFFER_SIZE 16384U
-#define SD_LOG_FLUSH_MARGIN 512U
 #define SD_LOG_FLUSH_IDLE_MS 5000U
-#define SD_LOG_SYNC_EVERY 256U
 #define SD_LOG_SYNC_INTERVAL_MS 2000U
 #define SD_LOG_IO_RETRY_COUNT 5U
 #define SD_LOG_IO_RETRY_DELAY_MS 50U
@@ -214,45 +198,19 @@ typedef enum {
 #define TELEMETRY_WHEEL_TIMEOUT_US 500000ULL
 #define TELEMETRY_WHEEL_CATCHUP_TOLERANCE_US 200000ULL
 #define TELEMETRY_SD_MISSING_BLINK_MS 350U
-#define RACE_LOG_RPM_START_THRESHOLD 1000U
-#define RACE_LOG_START_DELAY_MS 2000U
 #define RACE_NEXTION_RPM_UPDATE_MS 50U
 #define RACE_NEXTION_TPS_UPDATE_MS 50U
 #define RACE_NEXTION_GEAR_UPDATE_MS 250U
 #define RACE_NEXTION_DATA_UPDATE_MS 500U
 #define RACE_NEXTION_SPEED_UPDATE_MS 40U
-#define RACE_NEXTION_UART_TIMEOUT_MS 30U
 #define RACE_NEXTION_RAW_TX_TIMEOUT_MS 250U
 #define RACE_NEXTION_TX_SPACING_MS 20U
-#define RACE_NEXTION_TEST_RPM_MS 100U
-#define RACE_NEXTION_TEST_TPS_MS 120U
-#define RACE_NEXTION_TEST_GEAR_MS 300U
-#define RACE_NEXTION_TEST_WATER_MS 600U
-#define RACE_NEXTION_TEST_OIL_MS 800U
 #define RACE_CAN_SIGNAL_TIMEOUT_MS 2500U
 #define RACE_CAN_LED_TIMEOUT_MS 2000U
 #define RACE_LOG_WRITE_TIMEOUT_MS 3000U
 #define RACE_CLT_TOO_HOT_C 100
 #define RACE_NEXTION_NO_SIG_REPEAT_MS 500U
-#define RACE_CAN_PROCESS_BUDGET 64U
-#define RACE_ACTIVITY_LED_PULSE_MS 120U
-#define RACE_ACTIVITY_LED_MIN_GAP_MS 150U
-#define RACE_MAIN_HEARTBEAT_MS 500U
-#define RACE_LOG_FLUSH_IDLE_MS 1000U
-#define RACE_LOG_SYNC_INTERVAL_MS 5000U
-#define NEXTION_HMI_TEST_MODE 0U
-#define NEXTION_HMI_RPM_INTERVAL_MS 50U
-#define NEXTION_HMI_GEAR_INTERVAL_MS 250U
-#define NEXTION_HMI_DATA_INTERVAL_MS 500U
-#define TEST_RPM_SWEEP_HALF_MS 500U
-#define NEXTION_HMI_UART_TIMEOUT_MS 10U
-#define NEXTION_HMI_RPM_MAX 10000U
-#define NEXTION_HMI_RPM_STEP 250U
-#define NEXTION_HMI_SMALL_MAX 100U
-#define NEXTION_HMI_SMALL_STEP 5U
-#define NEXTION_RPM_TX_INTERVAL_MS 50U
 #define NEXTION_RPM_CAN_ID (EMU_CAN_BASE_ID + 0U)
-#define NEXTION_RPM_PROP "rpm.val"
 #define WS2812_LED_COUNT 12U
 #define WS2812_BITS_PER_LED 24U
 #define WS2812_RESET_SLOTS 64U
@@ -261,9 +219,7 @@ typedef enum {
 #define WS2812_T0H_NS 350U
 #define WS2812_T1H_NS 700U
 #define WS2812_PERIOD_NS 1250U
-#define WS2812_DMA_TIMEOUT_MS 20U
 #define WS2812_UPDATE_MS 40U
-#define RPM_MIN 0U
 #define RPM_MAX 10000U
 #define RPM_PER_LED 1000U
 #define RPM_USED_LED_COUNT 10U
@@ -296,7 +252,6 @@ typedef enum {
 #define LED_BLINK_OFF_MS 350U
 #define LED_BLINK_PAUSE_MS 1600U
 
-#define MAYBE_UNUSED __attribute__((unused))
 #define CCMRAM_BUFFER __attribute__((section(".ccmram"), aligned(8)))
 #define SDIO_ALIGNED_BUFFER __attribute__((aligned(32)))
 
@@ -357,8 +312,6 @@ extern volatile uint32_t g_sd_ll_last_wait_ms;
 extern volatile uint32_t g_sd_ll_last_tick;
 extern FIL g_emu_can_file;
 extern FIL *g_sd_active_file;
-extern volatile uint32_t g_wheel_log_count;
-extern volatile uint32_t g_adc_log_count;
 extern volatile uint32_t g_emu_can_log_count;
 extern volatile uint32_t g_emu_can_rx_count;
 extern volatile uint32_t g_emu_can_rx_overflow_count;
@@ -408,7 +361,6 @@ extern volatile uint16_t g_gnss_rx_tail;
 extern volatile uint32_t g_gnss_rx_count;
 extern volatile uint32_t g_gnss_rx_overflow_count;
 extern volatile uint32_t g_gnss_uart_error_count;
-extern volatile uint32_t g_gnss_drain_call_count;
 extern volatile uint64_t g_gnss_drain_byte_count;
 extern volatile uint8_t g_gnss_rx_queue[GNSS_RX_QUEUE_LEN];
 extern volatile uint32_t g_gnss_rx_byte_count;
@@ -492,8 +444,6 @@ extern volatile uint32_t g_race_can_seen_count;
 extern volatile uint32_t g_race_last_raw_can_rx_tick;
 extern volatile uint32_t g_race_last_can_rx_tick;
 extern uint32_t g_race_last_nextion_tx_tick;
-extern volatile uint32_t g_race_log_count;
-extern volatile uint32_t g_race_start_trigger_count;
 extern volatile uint32_t g_race_nextion_tx_attempt_count;
 extern volatile uint32_t g_race_nextion_tx_count;
 extern volatile uint32_t g_race_nextion_tx_fail_count;
