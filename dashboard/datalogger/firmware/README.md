@@ -95,6 +95,10 @@ Refactor branch에서는 다음 정적 검사를 수행했습니다.
 
 실차 동작 검증 기준은 기존 firmware와 동일합니다. 최종 배포 전에는 기존 regression 항목(CAN, ADC, wheel speed, GNSS, IMU, SD logging, HMI, shift light)을 bench/vehicle 환경에서 재확인해야 합니다.
 
+## Requirements & Design Decisions
+
+초기 요구사항과 실차 검증 과정에서의 변경 사항은 [REQUIREMENTS.md](REQUIREMENTS.md)에 정리되어 있습니다.
+
 ## Project
 
 - STM32CubeIDE project: `stm32cubeide/Datalogger_final3/`
