@@ -5,7 +5,7 @@ NS26F Formula Student 차량 전장 Harness 관련 공개 문서입니다.
 차량 Harness는 전장 파트에서 직접 설계·제작했으며, ECU·센서·전원·통신 배선을 차량 레이아웃에 맞춰 통합했습니다.
 
 <p align="center">
-<img src="../docs/images/portfolio/vehicle_harness.jpg" alt="NS26F vehicle harness" width="70%"><br>
+<img src="../docs/images/portfolio/vehicle_harness.JPG" alt="NS26F vehicle harness" width="70%"><br>
 <sub>차량 Harness 제작 및 Connector/전원·신호 배선 통합 과정</sub>
 </p>
 
