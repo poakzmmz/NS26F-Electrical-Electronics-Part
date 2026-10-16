@@ -2,7 +2,7 @@
 
 이 문서는 NS26F Data Logger 개발 초기에 정의한 요구사항과 실제 차량 검증 과정에서 변경된 구현 사항을 정리합니다.
 
-원본 요구사항은 `hardware/imported-source/NS26F-Datalogger-HW/sw요구사항.txt`에 보존되어 있습니다.
+개발 초기 요구사항 메모를 기준으로, 현재 공개 펌웨어에서 확인할 수 있는 구현 및 설계 변경 사항을 정리했습니다.
 
 ## Initial Requirements
 
